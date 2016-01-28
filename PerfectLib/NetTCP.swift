@@ -23,13 +23,14 @@
 //	program. If not, see <http://www.perfect.org/AGPL_3_0_With_Perfect_Additional_Terms.txt>.
 //
 
-import Foundation
 #if os(Linux)
 import SwiftGlibc
 let AF_UNSPEC: Int32 = 0
 let AF_INET: Int32 = 2
 let INADDR_NONE = UInt32(0xffffffff)
 let EINPROGRESS = Int32(115)
+#else
+import Darwin
 #endif
 
 /// Provides an asynchronous IO wrapper around a file descriptor.
@@ -521,15 +522,15 @@ public class NetTCP : Closeable {
 	
 	private func waitAccept() {
 		let event: LibEvent = LibEvent(base: LibEvent.eventBase, fd: fd.fd, what: self.evWhatFor(EV_READ), userData: nil) {
-			(fd:Int32, w:Int16, ud:AnyObject?) -> () in
+			[weak self] (fd:Int32, w:Int16, ud:AnyObject?) -> () in
 			
-			self.waitAcceptEvent = nil
+			self?.waitAcceptEvent = nil
 			if (Int32(w) & EV_TIMEOUT) != 0 {
 				print("huh?")
 			} else {
-				self.semaphore!.lock()
-				self.semaphore!.signal()
-				self.semaphore!.unlock()
+				self?.semaphore!.lock()
+				self?.semaphore!.signal()
+				self?.semaphore!.unlock()
 			}
 		}
 		self.waitAcceptEvent = event
